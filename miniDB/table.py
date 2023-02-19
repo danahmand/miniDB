@@ -6,7 +6,7 @@ import sys
 
 sys.path.append(f'{os.path.dirname(os.path.dirname(os.path.abspath(__file__)))}/miniDB')
 
-from misc import get_op, split_condition
+from misc import get_op, split_condition, reverse_op
 
 
 class Table:
@@ -233,66 +233,37 @@ class Table:
         #
         #
         if condition is not None:
-            if "BETWEEN" in condition.split() or "between" in condition.split():
+            if "between" in condition.split():
                 split_con = condition.split()
-                if (split_con[3] != 'and'):
-                    print('Prepei na xrisimopoihseis "and" anamesa stous arithmous')
+                if (split_con[3] != 'and'):  # if the condition is not correct
+                    print('You have to use "and" between the values')
                     exit()
-                else:
-                    left_val = split_con[2]
-                    right_val = split_con[4]
+                else:  # everything is ok
+                    left_val = split_con[2]  # left value
+                    right_val = split_con[4]  # right value
                     column_name = split_con[0]
                     column = self.column_by_name(column_name)
                     rows = []
-                    if (
-                            left_val.isdigit() and right_val.isdigit()):
+                    if (left_val.isdigit() and right_val.isdigit()):  # an oi times einai arithmoi
                         for i, j in enumerate(column):
-                            if int(j) >= int(left_val) and int(j) <= int(right_val):
+                            if int(left_val) <= int(j) <= int(right_val):#the value is between the two values
                                 rows.append(i)
                     else:
                         print('Cannot compare strings')
                         exit()
-            #OR opperator
-            elif "OR" in condition.split() or "or" in condition.split():
-                condition_list = condition.split("OR")
-                condition_list = condition_list[0].split("or")
-
-                row_lists = []
-                for cond in condition_list:
-                    column_name, operator, value = self._parse_condition(cond)
-                    column = self.column_by_name(column_name)
-                    row_lists.append([ind for ind, x in enumerate(column) if get_op(opperator, x, value)])
-
-                    rows = []
-                    for l in row_lists:
-                        for row in l:
-                            if not(row in rows):
-                                rows.append(row)
-             #AND opperator
-             elif "AND" in condition.split() or "and" in condition.split():
-                condition_list = condition.split("AND")
-                condition_list = condition_list[0].split("and")
-
-                row_lists = []
-                for cond in condition_list:
-                    column_name, operator, value = self._parse_condition(cond)
-                    column = self.column_by_name(column_name)
-                    row_lists.append([ind for ind, x in enumerate(column) if get_op(opperator, x, value)])
-
-                    rows = set(row_lists[0]).intersection(*row_lists)
-             #NOT opperator
-             elif "NOT" in condition.split() or "not" in condition.split():
-                    condition_list = condition.split("NOT")
-                    condition_list = condition_list[0].split("not")
-
-                    column_name, operator, value = self._parse_condition(condition_list[1])
-                    column = self.column_by_name(column_name)
-                    operator2 = reverse_op(operator)
-                    rows = [ind for ind, x in enumerate(column) if get_op(opperator2, x, value)]
-              else:
+            elif "NOT" in condition.split() or "not" in condition.split():
+                condition_list = condition.split("NOT")
+                condition_list = condition_list[0].split("not")
+                column_name, operator, value = self._parse_condition(condition_list[1])
+                column = self.column_by_name(column_name)
+                operator2=reverse_op(operator)
+                rows = [ind for ind, x in enumerate(column) if get_op(operator2, x, value)]
+            else:
                 column_name, operator, value = self._parse_condition(condition)
                 column = self.column_by_name(column_name)
                 rows = [ind for ind, x in enumerate(column) if get_op(operator, x, value)]
+        else:
+            rows = [i for i in range(len(self.data))]
 
         # copy the old dict, but only the rows and columns of data with index in rows/columns (the indexes that we want returned)
         dict = {(key):([[self.data[i][j] for j in return_cols] for i in rows] if key=="data" else value) for key,value in self.__dict__.items()}
