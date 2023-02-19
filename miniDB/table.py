@@ -147,7 +147,7 @@ class Table:
             condition: string. A condition using the following format:
                 'column[<,<=,=,>=,>]value' or
                 'value[<,<=,=,>=,>]column'.
-                
+
                 Operatores supported: (<,<=,=,>=,>)
         '''
         # parse the condition
@@ -179,7 +179,7 @@ class Table:
             condition: string. A condition using the following format:
                 'column[<,<=,==,>=,>]value' or
                 'value[<,<=,==,>=,>]column'.
-                
+
                 Operatores supported: (<,<=,==,>=,>)
         '''
         column_name, operator, value = self._parse_condition(condition)
@@ -216,7 +216,7 @@ class Table:
             condition: string. A condition using the following format:
                 'column[<,<=,==,>=,>]value' or
                 'value[<,<=,==,>=,>]column'.
-                
+
                 Operatores supported: (<,<=,==,>=,>)
             distinct: boolean. If True, the resulting table will contain only unique rows (False by default).
             order_by: string. A column name that signals that the resulting table should be ordered based on it (no order if None).
@@ -230,14 +230,69 @@ class Table:
         else:
             return_cols = [self.column_names.index(col.strip()) for col in return_columns.split(',')]
 
-        # if condition is None, return all rows
-        # if not, return the rows with values where condition is met for value
+        #
+        #
         if condition is not None:
-            column_name, operator, value = self._parse_condition(condition)
-            column = self.column_by_name(column_name)
-            rows = [ind for ind, x in enumerate(column) if get_op(operator, x, value)]
-        else:
-            rows = [i for i in range(len(self.data))]
+            if "BETWEEN" in condition.split() or "between" in condition.split():
+                split_con = condition.split()
+                if (split_con[3] != 'and'):
+                    print('Prepei na xrisimopoihseis "and" anamesa stous arithmous')
+                    exit()
+                else:
+                    left_val = split_con[2]
+                    right_val = split_con[4]
+                    column_name = split_con[0]
+                    column = self.column_by_name(column_name)
+                    rows = []
+                    if (
+                            left_val.isdigit() and right_val.isdigit()):
+                        for i, j in enumerate(column):
+                            if int(j) >= int(left_val) and int(j) <= int(right_val):
+                                rows.append(i)
+                    else:
+                        print('Cannot compare strings')
+                        exit()
+            #OR opperator
+            elif "OR" in condition.split() or "or" in condition.split():
+                condition_list = condition.split("OR")
+                condition_list = condition_list[0].split("or")
+
+                row_lists = []
+                for cond in condition_list:
+                    column_name, operator, value = self._parse_condition(cond)
+                    column = self.column_by_name(column_name)
+                    row_lists.append([ind for ind, x in enumerate(column) if get_op(opperator, x, value)])
+
+                    rows = []
+                    for l in row_lists:
+                        for row in l:
+                            if not(row in rows):
+                                rows.append(row)
+             #AND opperator
+             elif "AND" in condition.split() or "and" in condition.split():
+                condition_list = condition.split("AND")
+                condition_list = condition_list[0].split("and")
+
+                row_lists = []
+                for cond in condition_list:
+                    column_name, operator, value = self._parse_condition(cond)
+                    column = self.column_by_name(column_name)
+                    row_lists.append([ind for ind, x in enumerate(column) if get_op(opperator, x, value)])
+
+                    rows = set(row_lists[0]).intersection(*row_lists)
+             #NOT opperator
+             elif "NOT" in condition.split() or "not" in condition.split():
+                    condition_list = condition.split("NOT")
+                    condition_list = condition_list[0].split("not")
+
+                    column_name, operator, value = self._parse_condition(condition_list[1])
+                    column = self.column_by_name(column_name)
+                    operator2 = reverse_op(operator)
+                    rows = [ind for ind, x in enumerate(column) if get_op(opperator2, x, value)]
+              else:
+                column_name, operator, value = self._parse_condition(condition)
+                column = self.column_by_name(column_name)
+                rows = [ind for ind, x in enumerate(column) if get_op(operator, x, value)]
 
         # copy the old dict, but only the rows and columns of data with index in rows/columns (the indexes that we want returned)
         dict = {(key):([[self.data[i][j] for j in return_cols] for i in rows] if key=="data" else value) for key,value in self.__dict__.items()}
@@ -259,9 +314,9 @@ class Table:
         #         k = int(limit)
         #     except ValueError:
         #         raise Exception("The value following 'top' in the query should be a number.")
-            
+
         #     # Remove from the table's data all the None-filled rows, as they are not shown by default
-        #     # Then, show the first k rows 
+        #     # Then, show the first k rows
         #     s_table.data.remove(len(s_table.column_names) * [None])
         #     s_table.data = s_table.data[:k]
         if isinstance(limit,str):
@@ -332,7 +387,7 @@ class Table:
             column_name: string. Name of column.
             desc: boolean. If True, order_by will return results in descending order (False by default).
         '''
-        column = [val if val is not None else 0 for val in self.column_by_name(column_name)]
+        column = self.column_by_name(column_name)
         idx = sorted(range(len(column)), key=lambda k: column[k], reverse=desc)
         # print(idx)
         self.data = [self.data[i] for i in idx]
@@ -347,7 +402,7 @@ class Table:
             condition: string. A condition using the following format:
                 'column[<,<=,==,>=,>]value' or
                 'value[<,<=,==,>=,>]column'.
-                
+
                 Operators supported: (<,<=,==,>=,>)
         '''
         # get columns and operator
@@ -391,7 +446,7 @@ class Table:
             condition: string. A condition using the following format:
                 'column[<,<=,==,>=,>]value' or
                 'value[<,<=,==,>=,>]column'.
-                
+
                 Operators supported: (<,<=,==,>=,>)
         '''
         join_table, column_index_left, column_index_right, operator = self._general_join_processing(table_right, condition, 'inner')
@@ -411,7 +466,7 @@ class Table:
                     join_table._insert(row_left+row_right)
 
         return join_table
-    
+
     def _left_join(self, table_right: Table, condition):
         '''
         Perform a left join on the table with the supplied table (right).
@@ -420,7 +475,7 @@ class Table:
             condition: string. A condition using the following format:
                 'column[<,<=,==,>=,>]value' or
                 'value[<,<=,==,>=,>]column'.
-                
+
                 Operators supported: (<,<=,==,>=,>)
         '''
         join_table, column_index_left, column_index_right, operator = self._general_join_processing(table_right, condition, 'left')
@@ -450,7 +505,7 @@ class Table:
             condition: string. A condition using the following format:
                 'column[<,<=,==,>=,>]value' or
                 'value[<,<=,==,>=,>]column'.
-                
+
                 Operators supported: (<,<=,==,>=,>)
         '''
         join_table, column_index_left, column_index_right, operator = self._general_join_processing(table_right, condition, 'right')
@@ -471,7 +526,7 @@ class Table:
                         join_table._insert(row_left + row_right)
 
         return join_table
-    
+
     def _full_join(self, table_right: Table, condition):
         '''
         Perform a full join on the table with the supplied table (right).
@@ -480,7 +535,7 @@ class Table:
             condition: string. A condition using the following format:
                 'column[<,<=,==,>=,>]value' or
                 'value[<,<=,==,>=,>]column'.
-                
+
                 Operators supported: (<,<=,==,>=,>)
         '''
         join_table, column_index_left, column_index_right, operator = self._general_join_processing(table_right, condition, 'full')
@@ -490,7 +545,7 @@ class Table:
 
         right_table_row_length = len(table_right.column_names)
         left_table_row_length = len(self.column_names)
-        
+
         for row_left in self.data:
             left_value = row_left[column_index_left]
             if left_value is None:
@@ -548,7 +603,7 @@ class Table:
             condition: string. A condition using the following format:
                 'column[<,<=,==,>=,>]value' or
                 'value[<,<=,==,>=,>]column'.
-                
+
                 Operatores supported: (<,<=,==,>=,>)
             join: boolean. Whether to join or not (False by default).
         '''
