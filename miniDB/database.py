@@ -360,7 +360,7 @@ class Database:
         condition_column = '' # if condition is None else condition.split(" ")[0]
         if condition is not None:
             condition = condition.lower() # lower case condition to avoid case sensitivity issues
-            condition_column = (condition.split(" ")[0] if "between" in condition.split() or "not" in condition.split() or "or" in condition.split() or "and" in condition.split() else split_condition(condition)[0]) # if condition is None else condition.split(" ")[0] 
+            condition_column = (condition.split(" ")[0] if "between" in condition.split() or "not" in condition.split() or "or" in condition.split() or "and" in condition.split() else split_condition(condition)[0]) # if condition is None else condition.split(" ")[0]
 
         # self.lock_table(table_name, mode='x')
         if self.is_locked(table_name):
