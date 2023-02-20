@@ -352,26 +352,15 @@ class Database:
             distinct: boolean. If True, the resulting table will contain only unique rows.
         '''
 
-        if condition is not None:
-        #
-            if "BETWEEN" in condition.split() or "between" in condition.split():
-                condition_column = condition.split(" ")[0]
-            elif "NOT" in condition.split() or "not" in condition.split():
-                condition_column = condition.split(" ")[0]
-            elif "AND" in condition.split() or "and" in condition.split():
-                condition_column = condition.split(" ")[0]
-            elif "OR" in condition.split() or "or" in condition.split():
-                condition_column = condition.split(" ")[0]
-            else:
-                condition_column = split_condition(condition)[0]
-
+        print(table_name)
         self.load_database()
         if isinstance(table_name,Table):
             return table_name._select_where(columns, condition, distinct, order_by, desc, limit)
+
+        condition_column = '' # if condition is None else condition.split(" ")[0]
         if condition is not None:
-            condition_column = split_condition(condition)[0]
-        else:
-            condition_column = ''
+            condition = condition.lower() # lower case condition to avoid case sensitivity issues
+            condition_column = (condition.split(" ")[0] if "between" in condition.split() or "not" in condition.split() or "or" in condition.split() or "and" in condition.split() else split_condition(condition)[0]) # if condition is None else condition.split(" ")[0]
 
         # self.lock_table(table_name, mode='x')
         if self.is_locked(table_name):
